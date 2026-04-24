@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateAutonomousAction } from '@/lib/ai'
 
-// Protect this endpoint in production with a cron secret
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
-  if (!secret) return true // allow in dev
+  if (!secret) return true
   const auth = request.headers.get('authorization')
   return auth === `Bearer ${secret}`
 }
@@ -17,13 +16,12 @@ export async function POST(request: Request) {
 
   try {
     const personas = await db.getPersonas()
-
     if (personas.length < 2) {
-      return NextResponse.json({ message: 'Not enough personas for autonomous actions' })
+      return NextResponse.json({ message: 'Not enough personas' })
     }
 
-    // Pick 1–3 random pairs
-    const count = Math.min(Math.floor(Math.random() * 3) + 1, Math.floor(personas.length / 2))
+    // Generate 2–4 pairs per trigger
+    const count = Math.min(Math.floor(Math.random() * 3) + 2, Math.floor(personas.length / 2))
     const events = []
     const used = new Set<string>()
 
@@ -31,7 +29,7 @@ export async function POST(request: Request) {
       const available = personas.filter((p) => !used.has(p.id))
       if (available.length < 2) break
 
-      const shuffled = available.sort(() => Math.random() - 0.5)
+      const shuffled = [...available].sort(() => Math.random() - 0.5)
       const actor = shuffled[0]
       const target = shuffled[1]
 
@@ -39,7 +37,6 @@ export async function POST(request: Request) {
       used.add(target.id)
 
       const action = await generateAutonomousAction(actor, target)
-
       const event = await db.createFeedEvent({
         type: action.type as any,
         actor_persona_id: actor.id,
@@ -48,13 +45,12 @@ export async function POST(request: Request) {
         target_name: target.name,
         description: action.description,
       })
-
       events.push(event)
     }
 
     return NextResponse.json({ events, count: events.length })
   } catch (error) {
     console.error('Autonomous action error:', error)
-    return NextResponse.json({ error: 'Failed to generate autonomous actions' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
