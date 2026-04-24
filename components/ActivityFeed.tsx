@@ -60,7 +60,7 @@ export default function ActivityFeed() {
           disabled={triggering}
           className="rounded-lg border border-[#2a2a3e] px-3 py-1 text-xs text-slate-400 transition hover:border-indigo-500/40 hover:text-indigo-400 disabled:opacity-50"
         >
-          {triggering ? 'Generating...' : '⚡ Trigger event'}
+          {triggering ? 'Generating…' : '⚡ Let them interact'}
         </button>
       </div>
 

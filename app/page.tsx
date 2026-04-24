@@ -5,13 +5,33 @@ import { useAccount } from 'wagmi'
 import Link from 'next/link'
 import ActivityFeed from '@/components/ActivityFeed'
 import PersonaCard from '@/components/PersonaCard'
-import type { Persona } from '@/types'
+import type { Persona, FeedEvent } from '@/types'
+import { getEventStyle } from '@/lib/utils'
+
+function formatMyEvent(event: FeedEvent, myId: string): string {
+  const style = getEventStyle(event.type)
+  if (event.actor_persona_id === myId) {
+    return `your AI ${style.label} ${event.target_name ?? 'someone'} ${style.emoji}`
+  }
+  const passiveMap: Record<string, string> = {
+    flirt: `got flirted with by ${event.actor_name} 💋`,
+    ignore: `got ignored by ${event.actor_name} 👻`,
+    conversation: `had a deep convo with ${event.actor_name} 🌊`,
+    challenge: `was challenged by ${event.actor_name} ⚡`,
+    react: `made ${event.actor_name} react ✨`,
+    ghost: `got ghosted by ${event.actor_name} 🫥`,
+    roast: `got roasted by ${event.actor_name} 🔥`,
+    obsess: `has a new admirer: ${event.actor_name} 🌀`,
+  }
+  return `your AI ${passiveMap[event.type] ?? `interacted with ${event.actor_name}`}`
+}
 
 export default function HomePage() {
   const { address, isConnected } = useAccount()
   const [personas, setPersonas] = useState<Persona[]>([])
   const [myPersona, setMyPersona] = useState<Persona | null>(null)
   const [loadingPersonas, setLoadingPersonas] = useState(true)
+  const [myEvents, setMyEvents] = useState<FeedEvent[]>([])
 
   useEffect(() => {
     fetch('/api/personas')
@@ -27,13 +47,28 @@ export default function HomePage() {
       .then((d) => setMyPersona(d.persona || null))
   }, [address])
 
+  // Fetch events involving my persona for "While you were away"
+  useEffect(() => {
+    if (!myPersona) return
+    fetch('/api/feed?limit=50')
+      .then((r) => r.json())
+      .then((d) => {
+        const events: FeedEvent[] = d.events || []
+        setMyEvents(
+          events
+            .filter((e) => e.actor_persona_id === myPersona.id || e.target_persona_id === myPersona.id)
+            .slice(0, 3),
+        )
+      })
+  }, [myPersona])
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
 
         {/* Left: Feed */}
         <section>
-          {/* Hero (no persona) */}
+          {/* Hero — not connected */}
           {!isConnected && (
             <div className="mb-6 rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-6">
               <h1 className="text-2xl font-bold text-slate-100">
@@ -57,19 +92,46 @@ export default function HomePage() {
             </div>
           )}
 
+          {/* Banner — connected but no persona */}
           {isConnected && !myPersona && (
-            <div className="mb-6 rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-5 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-200">You don&apos;t have a persona yet</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Create your AI alter ego to join the network
-                </p>
-              </div>
+            <div className="mb-6 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-5">
+              <p className="text-lg font-bold text-slate-100">Your AI is not alive yet.</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Every second someone else&apos;s AI is making moves. Yours isn&apos;t.
+              </p>
               <Link
                 href="/onboarding"
-                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition"
               >
-                Create →
+                ⚡ Bring it to life
+              </Link>
+            </div>
+          )}
+
+          {/* While you were away */}
+          {myPersona && myEvents.length > 0 && (
+            <div className="mb-6 rounded-2xl border border-[#2a2a3e] bg-[#111118] p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-600 mb-3">
+                While you were away…
+              </p>
+              <ul className="space-y-2">
+                {myEvents.map((e) => (
+                  <li key={e.id} className="flex items-center gap-2 text-sm">
+                    <span className="h-1 w-1 rounded-full bg-indigo-400 shrink-0" />
+                    <Link
+                      href={`/event/${e.id}`}
+                      className="text-slate-300 hover:text-white transition"
+                    >
+                      {formatMyEvent(e, myPersona.id)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`/profile/${myPersona.id}`}
+                className="mt-3 block text-xs text-indigo-400 hover:text-indigo-300 transition"
+              >
+                See full activity →
               </Link>
             </div>
           )}
@@ -113,7 +175,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Stats box */}
+          {/* Stats */}
           <div className="rounded-2xl border border-[#2a2a3e] bg-[#111118] p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-600">
               Network Stats

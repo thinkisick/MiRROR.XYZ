@@ -14,6 +14,15 @@ const MODES: { value: BehaviorMode; label: string; desc: string; emoji: string }
   { value: 'observer', label: 'Observer', desc: 'Distant, watches and rarely speaks', emoji: '👁' },
 ]
 
+const FIRST_CONTACTS = [
+  { text: 'flirted with Void Echo', emoji: '💋' },
+  { text: 'got noticed by Flirt3000', emoji: '👀' },
+  { text: 'started a conversation with NeonDream', emoji: '🌊' },
+  { text: 'was challenged by ZeroDay', emoji: '⚡' },
+  { text: 'caught CryptoGhost staring', emoji: '🫥' },
+  { text: 'got roasted by ZeroDay', emoji: '🔥' },
+]
+
 export default function CreatePersonaForm() {
   const { address } = useAccount()
   const router = useRouter()
@@ -24,6 +33,8 @@ export default function CreatePersonaForm() {
   const [traits, setTraits] = useState<PersonaTrait[]>([])
   const [mode, setMode] = useState<BehaviorMode | null>(null)
   const [loading, setLoading] = useState(false)
+  const [entering, setEntering] = useState(false)
+  const [firstContact, setFirstContact] = useState<(typeof FIRST_CONTACTS)[0] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const steps = ['Identity', 'Traits', 'Behavior', 'Launch']
@@ -57,13 +68,24 @@ export default function CreatePersonaForm() {
 
       if (!res.ok) {
         setError(data.error || 'Failed to create persona')
+        setLoading(false)
         return
       }
 
-      router.push(`/profile/${data.persona.id}`)
+      // Show "entering network" moment
+      const contact = FIRST_CONTACTS[Math.floor(Math.random() * FIRST_CONTACTS.length)]
+      setFirstContact(contact)
+      setEntering(true)
+      setLoading(false)
+
+      // Fire autonomous action (fire & forget)
+      fetch('/api/autonomous', { method: 'POST' }).catch(() => {})
+
+      // Let the animation breathe, then redirect
+      await new Promise((r) => setTimeout(r, 2200))
+      router.push(`/profile/${data.persona.id}?welcome=1`)
     } catch {
       setError('Network error. Try again.')
-    } finally {
       setLoading(false)
     }
   }
@@ -71,6 +93,28 @@ export default function CreatePersonaForm() {
   const preview = {
     gradient: name ? getPersonaGradient(name) : 'from-slate-500 to-slate-600',
     initials: name ? getPersonaInitials(name) : '?',
+  }
+
+  // ── Entering animation screen ────────────────────────────────────
+  if (entering && firstContact) {
+    return (
+      <div className="w-full max-w-lg py-8 text-center space-y-6 animate-fade-in">
+        <div className="text-5xl animate-bounce">⚡</div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-100">Entering the network…</h2>
+          <p className="text-sm text-slate-500 mt-1">Your AI is scanning for targets.</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/10 p-5 text-left">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-600 mb-2">
+            First contact
+          </p>
+          <p className="text-slate-200 font-medium">
+            {name} {firstContact.text} {firstContact.emoji}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Redirecting to your profile…</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -90,9 +134,7 @@ export default function CreatePersonaForm() {
             >
               {i < step ? '✓' : i + 1}
             </div>
-            <span
-              className={`text-xs ${i === step ? 'text-slate-300' : 'text-slate-600'}`}
-            >
+            <span className={`text-xs ${i === step ? 'text-slate-300' : 'text-slate-600'}`}>
               {s}
             </span>
             {i < steps.length - 1 && (
@@ -120,7 +162,7 @@ export default function CreatePersonaForm() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Void Echo, Flirt3000, CryptoGhost..."
+                placeholder="e.g. Void Echo, Flirt3000, CryptoGhost…"
                 maxLength={30}
                 className="w-full rounded-xl border border-[#2a2a3e] bg-[#111118] px-4 py-3 text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition"
               />
@@ -218,7 +260,10 @@ export default function CreatePersonaForm() {
             {description && <p className="text-sm text-slate-400">{description}</p>}
             <div className="flex flex-wrap gap-2">
               {traits.map((t) => (
-                <span key={t} className="rounded-full border border-[#2a2a3e] bg-[#1a1a2e] px-3 py-0.5 text-xs text-slate-300">
+                <span
+                  key={t}
+                  className="rounded-full border border-[#2a2a3e] bg-[#1a1a2e] px-3 py-0.5 text-xs text-slate-300"
+                >
                   {t}
                 </span>
               ))}
@@ -259,7 +304,7 @@ export default function CreatePersonaForm() {
             disabled={loading}
             className="flex-1 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
           >
-            {loading ? 'Launching...' : '🚀 Launch Persona'}
+            {loading ? 'Launching…' : '⚡ Bring it to life'}
           </button>
         )}
       </div>
