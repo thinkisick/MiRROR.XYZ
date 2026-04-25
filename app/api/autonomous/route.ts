@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateAutonomousAction } from '@/lib/ai'
 
+export const dynamic = 'force-dynamic'
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return true

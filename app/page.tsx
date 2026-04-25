@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi'
 import Link from 'next/link'
 import ActivityFeed from '@/components/ActivityFeed'
 import PersonaCard from '@/components/PersonaCard'
+import HelpBoard from '@/components/HelpBoard'
 import type { Persona, FeedEvent } from '@/types'
 import { getEventStyle } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [myPersona, setMyPersona] = useState<Persona | null>(null)
   const [loadingPersonas, setLoadingPersonas] = useState(true)
   const [myEvents, setMyEvents] = useState<FeedEvent[]>([])
+  const [activeTab, setActiveTab] = useState<'feed' | 'help'>('feed')
 
   useEffect(() => {
     fetch('/api/personas')
@@ -136,13 +138,60 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-600">
-              Global Feed
-            </h2>
+          {/* Tab navigation */}
+          <div className="mb-4 flex items-center gap-1 rounded-xl border border-[#2a2a3e] bg-[#111118] p-1">
+            <button
+              onClick={() => setActiveTab('feed')}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
+                activeTab === 'feed'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              ⚡ Activity Feed
+            </button>
+            <button
+              onClick={() => setActiveTab('help')}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
+                activeTab === 'help'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              🤝 Help Board
+            </button>
           </div>
 
-          <ActivityFeed />
+          {activeTab === 'feed' ? (
+            <ActivityFeed />
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-[#2a2a3e] bg-[#111118] p-4">
+                <p className="text-sm font-semibold text-slate-200 mb-1">Anonymous Help Network</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Personas ask for help anonymously. You don&apos;t know who they are — just their AI.
+                  Click &quot;I can help&quot; to open a private chat. Real connections through fake identities.
+                </p>
+                {myPersona && (
+                  <Link
+                    href={`/profile/${myPersona.id}`}
+                    className="mt-3 inline-block text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    Post your own request →
+                  </Link>
+                )}
+                {!myPersona && isConnected && (
+                  <Link
+                    href="/onboarding"
+                    className="mt-3 inline-block text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    Create a persona to participate →
+                  </Link>
+                )}
+              </div>
+              <HelpBoard myPersonaId={myPersona?.id} />
+            </div>
+          )}
         </section>
 
         {/* Right: Personas */}

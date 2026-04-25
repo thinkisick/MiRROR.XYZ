@@ -67,3 +67,19 @@ export interface CreatePersonaInput {
   traits: PersonaTrait[]
   behavior_mode: BehaviorMode
 }
+
+export type HelpRequestCategory = 'info' | 'advice' | 'connect' | 'collab' | 'other'
+export type HelpRequestStatus = 'open' | 'in_progress' | 'resolved'
+
+export interface HelpRequest {
+  id: string
+  persona_id: string
+  persona_name: string
+  persona_traits?: PersonaTrait[]
+  title: string
+  description: string
+  category: HelpRequestCategory
+  status: HelpRequestStatus
+  response_count: number
+  created_at: string
+}

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateChatResponse } from '@/lib/ai'
 
+export const dynamic = 'force-dynamic'
+
 const FREE_MESSAGE_LIMIT = 5
 
 export async function GET(request: Request) {

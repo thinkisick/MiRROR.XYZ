@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import Link from 'next/link'
-import type { Persona, FeedEvent } from '@/types'
+import type { Persona, FeedEvent, HelpRequest } from '@/types'
 import PersonaCard from '@/components/PersonaCard'
 import FeedItem from '@/components/FeedItem'
+import HelpRequestForm from '@/components/HelpRequestForm'
 import { truncateAddress } from '@/lib/utils'
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_MIRROR_CONTRACT_ADDRESS
@@ -19,8 +20,10 @@ export default function ProfilePage() {
   const [persona, setPersona] = useState<Persona | null>(null)
   const [myPersona, setMyPersona] = useState<Persona | null>(null)
   const [events, setEvents] = useState<FeedEvent[]>([])
+  const [myRequests, setMyRequests] = useState<HelpRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [minting, setMinting] = useState(false)
+  const [showHelpForm, setShowHelpForm] = useState(false)
 
   const isOwner = persona && address &&
     persona.wallet_address.toLowerCase() === address.toLowerCase()
@@ -50,6 +53,22 @@ export default function ProfilePage() {
       .then((r) => r.json())
       .then((d) => setMyPersona(d.persona || null))
   }, [address])
+
+  const loadMyRequests = () => {
+    if (!persona) return
+    fetch(`/api/help-requests`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.requests) {
+          setMyRequests(d.requests.filter((r: HelpRequest) => r.persona_id === persona.id))
+        }
+      })
+  }
+
+  useEffect(() => {
+    if (persona) loadMyRequests()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persona])
 
   const handleMintNFT = async () => {
     if (!persona || !address) return
@@ -94,6 +113,13 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      {showHelpForm && persona && (
+        <HelpRequestForm
+          persona={persona}
+          onClose={() => setShowHelpForm(false)}
+          onCreated={loadMyRequests}
+        />
+      )}
       <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
 
         {/* Left: Profile + Activity */}
@@ -115,6 +141,32 @@ export default function ProfilePage() {
               <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-600">
                 Your persona
               </h3>
+              {/* Help request */}
+              <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
+                <p className="text-xs text-indigo-300/80 font-medium">
+                  🤝 Need help with something?
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Post anonymously — others will see your request in the Help Board and can chat with you to assist.
+                </p>
+                <button
+                  onClick={() => setShowHelpForm(true)}
+                  className="w-full rounded-xl bg-indigo-600/30 border border-indigo-500/40 py-2 text-xs font-medium text-indigo-300 hover:bg-indigo-600/50 transition"
+                >
+                  ✦ Post a Help Request
+                </button>
+              </div>
+              {myRequests.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-slate-600 uppercase tracking-wider">Your open requests</p>
+                  {myRequests.map((req) => (
+                    <div key={req.id} className="flex items-center justify-between rounded-lg bg-[#0d0d14] border border-[#2a2a3e] px-3 py-2">
+                      <span className="text-xs text-slate-400 truncate flex-1">{req.title}</span>
+                      <span className="text-xs text-slate-600 ml-2 shrink-0">{req.response_count} replies</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!persona.nft_token_id ? (
                 <div className="space-y-2">
                   <p className="text-sm text-slate-400">

@@ -1,30 +1,37 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Persona, Message, FeedEvent, Memory } from '@/types'
-import { MOCK_PERSONAS, MOCK_FEED_EVENTS } from './mock-data'
-
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+import type { Persona, Message, FeedEvent, Memory, HelpRequest } from '@/types'
+import { MOCK_PERSONAS, MOCK_FEED_EVENTS, MOCK_HELP_REQUESTS } from './mock-data'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let supabase: any = null
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey)
+let _supabase: any = null
+let _checked = false
+
+function getSupabase() {
+  if (_checked) return _supabase
+  _checked = true
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (url && key && url.startsWith('http')) {
+    try { _supabase = createClient(url, key) } catch { _supabase = null }
+  }
+  return _supabase
 }
 
-// In-memory store (used when Supabase is not configured)
 const store = {
   personas: [...MOCK_PERSONAS] as Persona[],
   messages: [] as Message[],
   feedEvents: [...MOCK_FEED_EVENTS] as FeedEvent[],
   memories: [] as Memory[],
+  helpRequests: [...MOCK_HELP_REQUESTS] as HelpRequest[],
 }
 
 export const db = {
   // ─── Personas ────────────────────────────────────────────────────
 
   async getPersonas(): Promise<Persona[]> {
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('personas')
         .select('*')
         .order('created_at', { ascending: false })
@@ -34,8 +41,9 @@ export const db = {
   },
 
   async getPersona(id: string): Promise<Persona | null> {
-    if (supabase) {
-      const { data } = await supabase.from('personas').select('*').eq('id', id).single()
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb.from('personas').select('*').eq('id', id).single()
       return data
     }
     return store.personas.find((p) => p.id === id) || null
@@ -43,8 +51,9 @@ export const db = {
 
   async getPersonaByWallet(walletAddress: string): Promise<Persona | null> {
     const addr = walletAddress.toLowerCase()
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('personas')
         .select('*')
         .eq('wallet_address', addr)
@@ -63,8 +72,9 @@ export const db = {
       message_count: 0,
       created_at: new Date().toISOString(),
     }
-    if (supabase) {
-      const { data, error } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data, error } = await sb
         .from('personas')
         .insert(newPersona)
         .select()
@@ -77,8 +87,9 @@ export const db = {
   },
 
   async updatePersona(id: string, updates: Partial<Persona>): Promise<Persona | null> {
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('personas')
         .update(updates)
         .eq('id', id)
@@ -95,8 +106,9 @@ export const db = {
   // ─── Messages ────────────────────────────────────────────────────
 
   async getMessages(fromId: string, toId: string): Promise<Message[]> {
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('messages')
         .select('*')
         .or(
@@ -120,8 +132,9 @@ export const db = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
     }
-    if (supabase) {
-      const { data, error } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data, error } = await sb
         .from('messages')
         .insert(newMessage)
         .select()
@@ -136,8 +149,9 @@ export const db = {
   // ─── Feed Events ─────────────────────────────────────────────────
 
   async getFeedEvents(limit = 50): Promise<FeedEvent[]> {
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('feed_events')
         .select(
           `*, actor:actor_persona_id(id,name,traits), target:target_persona_id(id,name,traits)`,
@@ -145,6 +159,7 @@ export const db = {
         .order('created_at', { ascending: false })
         .limit(limit)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data || []).map((row: any) => ({
         ...row,
         actor_name: row.actor?.name,
@@ -161,8 +176,9 @@ export const db = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
     }
-    if (supabase) {
-      const { data, error } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data, error } = await sb
         .from('feed_events')
         .insert({
           type: newEvent.type,
@@ -182,8 +198,9 @@ export const db = {
   // ─── Memories ────────────────────────────────────────────────────
 
   async getMemories(personaId: string, limit = 10): Promise<Memory[]> {
-    if (supabase) {
-      const { data } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
         .from('memories')
         .select('*')
         .eq('persona_id', personaId)
@@ -200,8 +217,9 @@ export const db = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
     }
-    if (supabase) {
-      const { data, error } = await supabase
+    const sb = getSupabase()
+    if (sb) {
+      const { data, error } = await sb
         .from('memories')
         .insert(newMemory)
         .select()
@@ -211,5 +229,83 @@ export const db = {
     }
     store.memories.push(newMemory)
     return newMemory
+  },
+
+  // ─── Help Requests ───────────────────────────────────────────────
+
+  async getHelpRequests(limit = 30): Promise<HelpRequest[]> {
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
+        .from('help_requests')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      return data || []
+    }
+    return store.helpRequests.filter((r) => r.status === 'open').slice(0, limit)
+  },
+
+  async getHelpRequest(id: string): Promise<HelpRequest | null> {
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb.from('help_requests').select('*').eq('id', id).single()
+      return data
+    }
+    return store.helpRequests.find((r) => r.id === id) || null
+  },
+
+  async getHelpRequestsByPersona(personaId: string): Promise<HelpRequest[]> {
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
+        .from('help_requests')
+        .select('*')
+        .eq('persona_id', personaId)
+        .order('created_at', { ascending: false })
+      return data || []
+    }
+    return store.helpRequests.filter((r) => r.persona_id === personaId)
+  },
+
+  async createHelpRequest(
+    request: Omit<HelpRequest, 'id' | 'created_at' | 'response_count'>,
+  ): Promise<HelpRequest> {
+    const newRequest: HelpRequest = {
+      ...request,
+      id: crypto.randomUUID(),
+      response_count: 0,
+      created_at: new Date().toISOString(),
+    }
+    const sb = getSupabase()
+    if (sb) {
+      const { data, error } = await sb
+        .from('help_requests')
+        .insert(newRequest)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    }
+    store.helpRequests.unshift(newRequest)
+    return newRequest
+  },
+
+  async updateHelpRequest(id: string, updates: Partial<HelpRequest>): Promise<HelpRequest | null> {
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb
+        .from('help_requests')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+      return data
+    }
+    const idx = store.helpRequests.findIndex((r) => r.id === id)
+    if (idx === -1) return null
+    store.helpRequests[idx] = { ...store.helpRequests[idx], ...updates }
+    return store.helpRequests[idx]
   },
 }

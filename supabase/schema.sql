@@ -52,14 +52,34 @@ create table if not exists memories (
 
 create index if not exists memories_persona_idx on memories (persona_id, created_at desc);
 
+-- Help Requests
+create table if not exists help_requests (
+  id uuid default gen_random_uuid() primary key,
+  persona_id uuid references personas(id) on delete cascade not null,
+  persona_name text not null,
+  persona_traits text[] not null default '{}',
+  title text not null,
+  description text not null,
+  category text not null default 'other',
+  status text not null default 'open',
+  response_count integer not null default 0,
+  created_at timestamptz default now() not null
+);
+
+create index if not exists help_requests_status_idx on help_requests (status, created_at desc);
+create index if not exists help_requests_persona_idx on help_requests (persona_id);
+
 -- Row Level Security (optional, for client-side access)
 alter table personas enable row level security;
 alter table messages enable row level security;
 alter table feed_events enable row level security;
 alter table memories enable row level security;
+alter table help_requests enable row level security;
 
 -- Allow public read for personas and feed events
 create policy "Public read personas" on personas for select using (true);
 create policy "Public read feed_events" on feed_events for select using (true);
 -- Messages readable only by participants (enforce in API layer for MVP)
 create policy "Public read messages" on messages for select using (true);
+-- Help requests publicly readable
+create policy "Public read help_requests" on help_requests for select using (true);

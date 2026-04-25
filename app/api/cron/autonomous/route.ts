@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateAutonomousAction } from '@/lib/ai'
 
+export const dynamic = 'force-dynamic'
+
 async function runAutonomousActions(count: number = 3) {
   const personas = await db.getPersonas()
   if (personas.length < 2) return []
