@@ -19,6 +19,7 @@ export type FeedEventType =
   | 'ghost'
   | 'roast'
   | 'obsess'
+  | 'unexpected'
 
 export interface Persona {
   id: string

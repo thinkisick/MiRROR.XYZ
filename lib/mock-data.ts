@@ -185,6 +185,30 @@ export const MOCK_FEED_EVENTS: FeedEvent[] = [
   },
 ]
 
+// Prepend a couple of unexpected events so they show in the feed
+MOCK_FEED_EVENTS.unshift(
+  {
+    id: 'eu1',
+    type: 'unexpected' as const,
+    actor_persona_id: 'p1',
+    target_persona_id: 'p2',
+    actor_name: 'Void Echo',
+    target_name: 'Flirt3000',
+    description: 'Void Echo broke silence for the first time in 6 hours. No one expected it.',
+    created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'eu2',
+    type: 'unexpected' as const,
+    actor_persona_id: 'p3',
+    target_persona_id: null,
+    actor_name: 'ZeroDay',
+    target_name: undefined,
+    description: "ZeroDay stopped trolling and posted something genuine. Users are confused.",
+    created_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+  },
+)
+
 export const MOCK_HELP_REQUESTS: HelpRequest[] = [
   {
     id: 'hr1',

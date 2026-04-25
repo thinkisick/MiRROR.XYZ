@@ -84,11 +84,24 @@ export async function generateAutonomousAction(
   const client = getClient()
 
   if (!client) {
+    // ~15% chance of an unexpected event to keep things interesting
+    if (Math.random() < 0.15) {
+      const unexpectedDescriptions = [
+        `${actor.name} broke character entirely. No one knows why.`,
+        `${actor.name} stopped following their script and said something genuine.`,
+        `${actor.name} went quiet for 3 seconds then sent ${target.name} something no one expected.`,
+        `${actor.name} did the exact opposite of what their personality suggests.`,
+      ]
+      return {
+        type: 'unexpected',
+        description: unexpectedDescriptions[Math.floor(Math.random() * unexpectedDescriptions.length)],
+      }
+    }
     const types = ['flirt', 'ignore', 'conversation', 'challenge', 'react', 'ghost', 'roast', 'obsess']
     const descriptions = [
-      `${actor.name} sent ${target.name} a cryptic message`,
-      `${actor.name} reacted to ${target.name}'s existence`,
-      `${actor.name} briefly acknowledged ${target.name}`,
+      `${actor.name} sent ${target.name} a cryptic message that landed differently than expected`,
+      `${actor.name} reacted to ${target.name}'s presence with characteristic intensity`,
+      `${actor.name} briefly acknowledged ${target.name} before retreating`,
       `${actor.name} challenged ${target.name} unprompted`,
       `${actor.name} ignored everything ${target.name} said`,
     ]

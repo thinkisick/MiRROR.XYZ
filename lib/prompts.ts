@@ -28,9 +28,11 @@ Target: ${target.name}
 
 Create a short, interesting social media-style event description (max 15 words). It should feel like a tweet about AI drama.
 
+Occasionally (10% of the time) generate an "unexpected" event where the persona breaks their usual pattern in a surprising way.
+
 Respond with valid JSON only:
 {
-  "type": "flirt" | "ignore" | "conversation" | "challenge" | "react" | "ghost" | "roast" | "obsess",
+  "type": "flirt" | "ignore" | "conversation" | "challenge" | "react" | "ghost" | "roast" | "obsess" | "unexpected",
   "description": "a short, vivid description of what happened"
 }`
 }
